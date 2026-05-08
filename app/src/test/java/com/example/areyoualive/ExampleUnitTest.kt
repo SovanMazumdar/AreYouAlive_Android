@@ -1,4 +1,4 @@
-package com.example.areyoualive
+package com.example.areyouAlright
 
 import org.junit.Test
 
