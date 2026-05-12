@@ -3,6 +3,8 @@ package com.example.areyouAlright
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.ViewGroup
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -25,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
         webView.settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = AreYouAliveWebViewClient()
 
         // 🔑 VERY IMPORTANT: layout params
         webView.layoutParams = ViewGroup.LayoutParams(
@@ -50,5 +52,39 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    private inner class AreYouAliveWebViewClient : WebViewClient() {
+        override fun onReceivedError(
+            view: WebView?,
+            request: WebResourceRequest?,
+            error: WebResourceError?
+        ) {
+            super.onReceivedError(view, request, error)
+
+            if (request?.isForMainFrame == false) {
+                return
+            }
+
+            view?.loadData(
+                """
+                <html>
+                    <body style='text-align:center; padding: 20px;'>
+                        <h2>Connection Error</h2>
+                        <p>Unable to reach the app. Please check your internet connection.</p>
+                    </body>
+                </html>
+                """.trimIndent(),
+                "text/html",
+                "utf-8"
+            )
+        }
+
+        override fun shouldOverrideUrlLoading(
+            view: WebView?,
+            request: WebResourceRequest?
+        ): Boolean {
+            return false
+        }
     }
 }
