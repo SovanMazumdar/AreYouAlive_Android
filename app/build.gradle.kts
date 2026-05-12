@@ -17,8 +17,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "APP_NAME", "\"Are You Alright (Dev)\"")
+            manifestPlaceholders["appName"] = "Are You Alright (Dev)"
+            manifestPlaceholders["usesCleartextTraffic"] = true
+        }
         release {
+            buildConfigField("String", "API_BASE_URL", "\"https://are-you-alive-vjxi.onrender.com\"")
+            buildConfigField("String", "APP_NAME", "\"Are You Alright\"")
+            manifestPlaceholders["appName"] = "Are You Alright"
+            manifestPlaceholders["usesCleartextTraffic"] = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -40,6 +54,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
