@@ -19,6 +19,20 @@ CORS(
     },
 )
 
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline'"
+)
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    return response
+
 
 @app.route("/")
 def index():
