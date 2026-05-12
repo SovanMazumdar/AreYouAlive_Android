@@ -36,9 +36,10 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(webView)
+        title = BuildConfig.APP_NAME
 
-        // 🔁 LOAD YOUR LIVE URL
-        webView.loadUrl("https://are-you-alive-vjxi.onrender.com/")
+        // 🔁 LOAD THE ENVIRONMENT-SPECIFIC BACKEND URL
+        webView.loadUrl(BuildConfig.API_BASE_URL)
 
         // ✅ MODERN BACK GESTURE HANDLING
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
