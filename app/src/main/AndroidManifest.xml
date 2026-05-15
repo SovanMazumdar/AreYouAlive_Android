@@ -13,16 +13,17 @@
         android:usesCleartextTraffic="${usesCleartextTraffic}"
         android:supportsRtl="true"
         android:theme="@style/Theme.AreYouAlright">
+        
         <activity
             android:name="com.example.areyouAlright.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AreYouAlright">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
     </application>
 
 </manifest>
