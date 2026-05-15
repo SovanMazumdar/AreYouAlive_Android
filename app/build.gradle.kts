@@ -23,7 +23,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://localhost:5000\"")
+            // 🔑 Use 10.0.2.2 instead of localhost for emulator compatibility
+            // 10.0.2.2 is Android emulator's special alias to reach the host machine
+            // For physical devices during development, this won't work (use actual IP or ngrok)
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5000\"")
             buildConfigField("String", "APP_NAME", "\"Are You Alright (Dev)\"")
             manifestPlaceholders["appName"] = "Are You Alright (Dev)"
             manifestPlaceholders["usesCleartextTraffic"] = true
