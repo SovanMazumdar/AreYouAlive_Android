@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1011146524583",
+    "project_id": "are-you-alright",
+    "storage_bucket": "are-you-alright.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011146524583:android:c11e3475a5ebf9f8f09882",
+        "android_client_info": {
+          "package_name": "com.example.areyouAlright"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5-Ubs_8GZ0AoGlDDXCGpACCrs7ehpMBw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,7 @@
 package com.example.areyouAlright
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
@@ -9,21 +10,69 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var auth: FirebaseAuth
     private val TAG = "AreYouAlright"
 
-    @SuppressLint("SetJavaScriptEnabled")
+    private val signInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        try {
+            val account = GoogleSignIn
+                .getSignedInAccountFromIntent(result.data)
+                .getResult(ApiException::class.java)!!
+            firebaseAuthWithGoogle(account.idToken!!)
+        } catch (e: ApiException) {
+            Log.e(TAG, "Google sign-in failed: ${e.statusCode}")
+            Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = FirebaseAuth.getInstance()
+        if (auth.currentUser != null) {
+            setupWebView()
+        } else {
+            launchGoogleSignIn()
+        }
+    }
 
+    private fun launchGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        signInLauncher.launch(GoogleSignIn.getClient(this, gso).signInIntent)
+    }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        auth.signInWithCredential(GoogleAuthProvider.getCredential(idToken, null))
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    Log.d(TAG, "Auth OK: ${auth.currentUser?.email}")
+                    setupWebView()
+                } else {
+                    Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
         webView = WebView(this)
-
-        // 🔑 REQUIRED WebView settings
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -34,151 +83,41 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         }
-
         webView.webViewClient = AreYouAliveWebViewClient()
-
-        // 🔑 VERY IMPORTANT: layout params
         webView.layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-
         setContentView(webView)
         title = BuildConfig.APP_NAME
+        Log.d(TAG, "Loading: ${BuildConfig.API_BASE_URL}")
+        webView.loadUrl(BuildConfig.API_BASE_URL)
 
-        // 🔁 LOAD THE ENVIRONMENT-SPECIFIC BACKEND URL
-        val apiUrl = BuildConfig.API_BASE_URL
-        Log.d(TAG, "Loading API URL: $apiUrl")
-        Log.d(TAG, "App Name: ${BuildConfig.APP_NAME}")
-        Log.d(TAG, "Build Type: ${BuildConfig.BUILD_TYPE}")
-        
-        webView.loadUrl(apiUrl)
-
-        // ✅ MODERN BACK GESTURE HANDLING
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    // Disable this callback and let the system handle back (e.g., exit app)
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                }
+                if (webView.canGoBack()) webView.goBack()
+                else { isEnabled = false; onBackPressedDispatcher.onBackPressed() }
             }
         })
     }
 
     private inner class AreYouAliveWebViewClient : WebViewClient() {
-        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-            super.onPageStarted(view, url, favicon)
-            Log.d(TAG, "Page started loading: $url")
+        override fun onPageStarted(v: WebView?, url: String?, f: android.graphics.Bitmap?) {
+            super.onPageStarted(v, url, f); Log.d(TAG, "Loading: $url")
         }
-
-        override fun onPageFinished(view: WebView?, url: String?) {
-            super.onPageFinished(view, url)
-            Log.d(TAG, "Page finished loading: $url")
+        override fun onPageFinished(v: WebView?, url: String?) {
+            super.onPageFinished(v, url); Log.d(TAG, "Loaded: $url")
         }
-
-        override fun onReceivedError(
-            view: WebView?,
-            request: WebResourceRequest?,
-            error: WebResourceError?
-        ) {
-            super.onReceivedError(view, request, error)
-
-            // Log the error for debugging
-            Log.e(TAG, "WebView Error - URL: ${request?.url}, Error Code: ${error?.errorCode}, Description: ${error?.description}")
-
-            if (request?.isForMainFrame == false) {
-                Log.d(TAG, "Ignoring sub-frame error")
-                return
-            }
-
-            view?.loadData(
-                """
-                <html>
-                    <head>
-                        <style>
-                            body {
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                margin: 0;
-                                padding: 0;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                height: 100vh;
-                            }
-                            .error-container {
-                                background: white;
-                                border-radius: 12px;
-                                padding: 40px;
-                                text-align: center;
-                                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-                                max-width: 400px;
-                            }
-                            h2 {
-                                color: #d32f2f;
-                                margin: 0 0 16px 0;
-                                font-size: 24px;
-                            }
-                            p {
-                                color: #666;
-                                margin: 8px 0;
-                                line-height: 1.6;
-                                font-size: 14px;
-                            }
-                            .debug-info {
-                                background: #f5f5f5;
-                                padding: 16px;
-                                border-radius: 8px;
-                                margin-top: 20px;
-                                text-align: left;
-                                font-family: monospace;
-                                font-size: 12px;
-                                color: #333;
-                            }
-                            .retry-hint {
-                                margin-top: 20px;
-                                padding-top: 20px;
-                                border-top: 1px solid #eee;
-                            }
-                            .retry-hint strong {
-                                color: #333;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="error-container">
-                            <h2>⚠️ Connection Error</h2>
-                            <p>Unable to reach the app. Please check your internet connection.</p>
-                            <div class="debug-info">
-                                <strong>Error Code:</strong> ${error?.errorCode}<br>
-                                <strong>Error Description:</strong> ${error?.description}<br>
-                                <strong>URL:</strong> ${request?.url}
-                            </div>
-                            <div class="retry-hint">
-                                <strong>Troubleshooting:</strong><br>
-                                1. Check your WiFi/Mobile connection<br>
-                                2. Verify Flask backend is running<br>
-                                3. Check firewall settings<br>
-                                4. Try refreshing (back and forward)
-                            </div>
-                        </div>
-                    </body>
-                </html>
-                """.trimIndent(),
-                "text/html",
-                "utf-8"
+        override fun onReceivedError(v: WebView?, req: WebResourceRequest?, err: WebResourceError?) {
+            super.onReceivedError(v, req, err)
+            if (req?.isForMainFrame == false) return
+            v?.loadData(
+                "<html><body style='font-family:sans-serif;text-align:center;padding:3rem'>" +
+                "<h2 style='color:#d32f2f'>Connection Error</h2>" +
+                "<p>Check your internet connection and try again.</p>" +
+                "</body></html>", "text/html", "utf-8"
             )
         }
-
-        override fun shouldOverrideUrlLoading(
-            view: WebView?,
-            request: WebResourceRequest?
-        ): Boolean {
-            Log.d(TAG, "URL Loading: ${request?.url}")
-            return false
-        }
+        override fun shouldOverrideUrlLoading(v: WebView?, req: WebResourceRequest?) = false
     }
 }
