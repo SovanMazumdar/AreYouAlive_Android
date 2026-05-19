@@ -65,7 +65,13 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG, "Auth OK: ${auth.currentUser?.email}")
                     setupWebView()
                 } else {
-                    Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Authentication failed. Please try again.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    launchGoogleSignIn() // retry instead of blank screen
                 }
             }
     }
